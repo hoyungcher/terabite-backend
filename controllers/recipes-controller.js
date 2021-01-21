@@ -58,8 +58,8 @@ const getRecipesByUserId = (req, res, next) => {
         return r.user_id === userId;
     })
 
-    if (recipes.length < 1) {
-        throw new HttpError('Could not find a recipe for the provided user id.');
+    if (!recipes || recipes.length < 1) {
+        throw new HttpError('Could not find any recipes for the provided user id.');
     }
 
     res.json({recipes});

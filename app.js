@@ -13,6 +13,8 @@ const app = express();
 
 app.use(bodyParser.json());
 
+app.use('/api/users', usersRoutes);
+
 app.use('/api/recipes', recipesRoutes);
 
 app.use('/api/inventory', inventoryRoutes);
