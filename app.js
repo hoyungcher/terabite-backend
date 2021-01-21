@@ -1,5 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
 
 const recipesRoutes = require('./routes/recipes-routes');
 const inventoryRoutes = require('./routes/inventory-routes');
@@ -37,4 +38,11 @@ app.use((error, req, res, next) => {
 
 });
 
-app.listen(5000);
+mongoose
+    .connect('mongodb+srv://hoyungcher:terabite123@cluster0.kyz9t.mongodb.net/test?retryWrites=true&w=majority')
+    .then(() => {
+        app.listen(5000);
+    })
+    .catch(err => {
+        console.log(err);
+    });
