@@ -1,7 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 
 const HttpError = require('../models/http-error');
-
+const Recipe = require('../models/recipe');
 
 let RECIPES = [
     {
@@ -38,68 +38,131 @@ let RECIPES = [
     }
 ]
 
-const getRecipeById = (req, res, next) => {
+const getRecipeById = async (req, res, next) => {
     const recipeId = req.params.rid;
-    const recipe = RECIPES.find(r => {
-        return r.id === recipeId;
-    });
+
+    let recipe;
+    try {
+        recipe = await Recipe.findById(recipeId);
+    } catch(err) {
+        const error = new HttpError(
+            'Something went wrong, could not find a place.', 500
+        );
+        return next(error);
+    }
+
+    
     
     if (!recipe) {
-        throw new HttpError('Could not find a recipe for the provided id.')
-
+        const error = new HttpError('Could not find a recipe for the provided id.')
+        return next(error);
     }
 
-    res.json({recipe});
+    res.json({ recipe: recipe.toObject( {getters: true}) });
 };
 
-const getRecipesByUserId = (req, res, next) => {
+const getRecipesByUserId = async (req, res, next) => {
     const userId = req.params.uid;
-    const recipes = RECIPES.filter(r => {
-        return r.user_id === userId;
-    })
+    let recipes;
+
+    try {
+        recipes = await Recipe.find({ user_id: userId });
+    } catch {
+        const error = new HttpError(
+            'Fetching places failed, please try again later', 500
+        );
+    }
 
     if (!recipes || recipes.length < 1) {
-        throw new HttpError('Could not find any recipes for the provided user id.');
+        return next(
+            new HttpError('Could not find any recipes for the provided user id.', 404)
+        );
     }
 
-    res.json({recipes});
+    res.json({ recipes: recipes.map(recipe => recipe.toObject({ getters: true })) });
 };
 
-const createRecipe = (req, res, next) => {
-    const { user_id, name, method, portions } = req.body;
-    const createdRecipe = {
-        id: uuidv4(),
-        user_id,
+const createRecipe = async (req, res, next) => {
+    const { user_id, name, description, method, portions } = req.body;
+    const createdRecipe = new Recipe ({
         name,
-        ingredients: [],
+        description,
         method,
-        portions
+        portions,
+        user_id
+    })
+    
+    try {
+        await createdRecipe.save();
+    } catch (err) {
+        const error = new HttpError(
+            'Creating recipe failed, please try again.',
+            500
+        );
+        return next(error);
     }
-    RECIPES.push(createdRecipe);
+    
 
     res.status(201).json({recipe: createdRecipe});
 };
 
-const updateRecipe = (req, res, next) => {
-    const { name, method, portions } = req.body;
+const updateRecipe = async (req, res, next) => {
+    const { name, description, method, portions } = req.body;
     const recipeId = req.params.rid;
 
-    const updatedRecipe = {...RECIPES.find(r => r.id === recipeId)};
-    const recipeIndex = RECIPES.findIndex(r => r.id === recipeId);
+    let recipe;
+    try {
+        recipe = await Recipe.findById(recipeId);
+    } catch(err) {
+        const error = new HttpError(
+            'Something went wrong, could not update recipe.',
+            500
+        );
+        return next(error);
+    }
 
-    updatedRecipe.name = name;
-    updatedRecipe.method = method;
-    updatedRecipe.portions = portions;
+    recipe.name = name;
+    recipe.description = description;
+    recipe.method = method;
+    recipe.portions = portions;
 
-    RECIPES[recipeIndex] = updatedRecipe;
+    try {
+        await recipe.save();
+    } catch(err) {
+        const error = new HttpError(
+            'Something went wrong, could not update recipe.',
+            500
+        );
+        return next(error);
+    }
 
-    res.status(200).json({recipe: updatedRecipe});
+    res.status(200).json({recipe: recipe.toObject({ getters: true }) });
 
 }
 
-const deleteRecipe = (req, res, next) => {
+const deleteRecipe = async (req, res, next) => {
     const recipeId = req.params.rid;
-    RECIPES = RECIPES.filter(r => r.id !== recipeId);
+    let recipe;
+    try {
+        recipe = await Recipe.findById(recipeId);
+    } catch (err) {
+        const error = new HttpError(
+            'Something went wrong, could not delete recipe.',
+            500
+        );
+        return next(error);
+    }
+
+    try {
+        await recipe.remove();
+    } catch (err) {
+        const error = new HttpError(
+            'Something went wrong, could not delete recipe.',
+            500
+        );
+        return next(error);
+    }
+
     res.status(200).json({message: 'Deleted place.'})
     
 }
