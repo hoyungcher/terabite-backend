@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
+const dotenv = require('dotenv').config();
 
 const recipesRoutes = require('./routes/recipes-routes');
 const inventoryRoutes = require('./routes/inventory-routes');
@@ -39,7 +40,7 @@ app.use((error, req, res, next) => {
 });
 
 mongoose
-    .connect('mongodb+srv://hoyungcher:terabite123@cluster0.kyz9t.mongodb.net/test?retryWrites=true&w=majority')
+    .connect(`mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.kyz9t.mongodb.net/test?retryWrites=true&w=majority`)
     .then(() => {
         app.listen(5000);
     })
