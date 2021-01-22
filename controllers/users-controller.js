@@ -2,8 +2,18 @@ const HttpError = require('../models/http-error');
 const recipe = require('../models/recipe');
 const User = require('../models/user');
 
-const getUsers = (req, res, next) => {
-    res.status(200).json({users: USERS});
+const getUsers = async (req, res, next) => {
+    let users;
+    try {
+        users = await User.find({}, '-password');
+    } catch(err) {
+        const error = new HttpError(
+            'Fetching users failed, please try again later.',
+            500
+        );
+        return next(error);
+    }
+    res.json({users: users.map(user => user.toObject({ getters: true }) )});
 };
 
 const signup = async (req, res, next) => {
@@ -12,7 +22,7 @@ const signup = async (req, res, next) => {
 
     let existingEmail;
     try {
-        const existingEmail = await User.findOne({ email: email })
+        existingEmail = await User.findOne({ email: email })
     } catch(err) {
         const error = new HttpError(
             'Signing up failed, please try again later.',
@@ -23,7 +33,7 @@ const signup = async (req, res, next) => {
         
     let existingUser;
     try {
-        const existingUser = await User.findOne({ username: username })
+        existingUser = await User.findOne({ username: username })
     } catch(err) {
         const error = new HttpError(
             'Signing up failed, please try again later.',
@@ -53,7 +63,8 @@ const signup = async (req, res, next) => {
         first_name,
         last_name,
         email,
-        password
+        password,
+        recipes: []
     })
 
     try {
@@ -69,18 +80,26 @@ const signup = async (req, res, next) => {
     res.status(201).json({ user: createdUser.toObject({ getters: true }) });
 };
 
-const login = (req, res, next) => {
+const login = async (req, res, next) => {
     const { username, password } = req.body;
 
-    const identifiedUser = USERS.find(u => u.username === username);
-
-    if (!identifiedUser || identifiedUser.password !== password) {
-        throw new HttpError('Could not identify user, credentials seem to be wrong.', 401)
+    let existingUser;
+    try {
+        existingUser = await User.findOne({ username: username })
+    } catch(err) {
+        const error = new HttpError(
+            'Logging in failed, please try again later.',
+            500
+        );
+        return next(error);
     }
 
+    if (!existingUser || existingUser.password !== password) {
+        const error = new HttpError(
+            'Invalid credentials. Could not log you in.'
+        )
+    }
     res.json({message: 'Logged in'})
-
-
 };
 
 exports.getUsers = getUsers;

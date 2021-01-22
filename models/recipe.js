@@ -7,7 +7,7 @@ const recipeSchema = new Schema({
     description: { type: String, required: true },
     method: { type: String, required: true },
     portions: { type: String, required: true },
-    user_id: { type: String, required: true },
+    user_id: { type: mongoose.Types.ObjectId, required: true, ref: 'User' },
     // ingredients: [{
     //     ingredient: { type: String },
     //     quantity: { type: String },

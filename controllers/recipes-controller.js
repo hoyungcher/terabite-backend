@@ -1,7 +1,9 @@
-const { v4: uuidv4 } = require('uuid');
+const mongooseUniqueValidator = require('mongoose-unique-validator');
+const mongoose = require('mongoose');
 
 const HttpError = require('../models/http-error');
 const Recipe = require('../models/recipe');
+const User = require('../models/user');
 
 let RECIPES = [
     {
@@ -51,8 +53,6 @@ const getRecipeById = async (req, res, next) => {
         return next(error);
     }
 
-    
-    
     if (!recipe) {
         const error = new HttpError('Could not find a recipe for the provided id.')
         return next(error);
@@ -92,8 +92,29 @@ const createRecipe = async (req, res, next) => {
         user_id
     })
     
+    let user;
+
     try {
-        await createdRecipe.save();
+        user = await User.findById(user_id);
+    } catch (err) {
+        const error = new HttpError(
+            'Creating recipe failed, please try again',
+            500
+        );
+    }
+
+    if (!user) {
+        const error = new HttpError('Could not find user for provided id',
+        404);
+    }
+
+    try {
+        const session = await mongoose.startSession();
+        session.startTransaction();
+        createdRecipe.save({ session: session });
+        user.recipes.push(createdRecipe);
+        await user.save({ session: session});
+        await session.commitTransaction();
     } catch (err) {
         const error = new HttpError(
             'Creating recipe failed, please try again.',
@@ -102,7 +123,6 @@ const createRecipe = async (req, res, next) => {
         return next(error);
     }
     
-
     res.status(201).json({recipe: createdRecipe});
 };
 
@@ -137,12 +157,12 @@ const updateRecipe = async (req, res, next) => {
     }
 
     res.status(200).json({recipe: recipe.toObject({ getters: true }) });
-
 }
 
 const deleteRecipe = async (req, res, next) => {
     const recipeId = req.params.rid;
     let recipe;
+
     try {
         recipe = await Recipe.findById(recipeId);
     } catch (err) {
@@ -164,7 +184,6 @@ const deleteRecipe = async (req, res, next) => {
     }
 
     res.status(200).json({message: 'Deleted place.'})
-    
 }
 
 exports.getRecipeById = getRecipeById;
