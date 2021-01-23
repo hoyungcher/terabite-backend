@@ -164,7 +164,7 @@ const deleteRecipe = async (req, res, next) => {
     let recipe;
 
     try {
-        recipe = await Recipe.findById(recipeId);
+        recipe = await Recipe.findById(recipeId).populate('user_id');
     } catch (err) {
         const error = new HttpError(
             'Something went wrong, could not delete recipe.',
@@ -172,9 +172,23 @@ const deleteRecipe = async (req, res, next) => {
         );
         return next(error);
     }
+    
+    if (!recipe) {
+        const error = new HttpError( 
+            'Could not find recipe',
+            500
+        );
+        return next(error);
+    }
 
     try {
-        await recipe.remove();
+        const session = await mongoose.startSession();
+        session.startTransaction();
+        await recipe.remove({session: session});
+        recipe.user_id.recipes.pull(recipe);
+        await recipe.user_id.save({session: session});
+        await session.commitTransaction();
+
     } catch (err) {
         const error = new HttpError(
             'Something went wrong, could not delete recipe.',
