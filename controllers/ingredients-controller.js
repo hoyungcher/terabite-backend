@@ -1,6 +1,18 @@
 const HttpError = require('../models/http-error');
 const Ingredient = require('../models/ingredient');
 
+
+// https://youtu.be/3IDlOI0D8-8?t=828
+// const searchIngredients = async (req, res, next) => {
+//     try {
+
+//     } catch {
+
+//     }
+// }
+
+
+
 const createIngredient = async (req, res, next) => {
    const { name } = req.body;
 
