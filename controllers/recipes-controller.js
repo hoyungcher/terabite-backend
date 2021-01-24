@@ -71,6 +71,7 @@ const getRecipesByUserId = async (req, res, next) => {
         const error = new HttpError(
             'Fetching places failed, please try again later', 500
         );
+        return next(error);
     }
 
     if (!recipes || recipes.length < 1) {
@@ -101,6 +102,7 @@ const createRecipe = async (req, res, next) => {
             'Creating recipe failed, please try again',
             500
         );
+        return next(error);
     }
 
     if (!user) {
@@ -113,7 +115,7 @@ const createRecipe = async (req, res, next) => {
         session.startTransaction();
         createdRecipe.save({ session: session });
         user.recipes.push(createdRecipe);
-        await user.save({ session: session});
+        await user.save({session: session});
         await session.commitTransaction();
     } catch (err) {
         const error = new HttpError(
