@@ -4,7 +4,7 @@ const ingredientsController = require('../controllers/ingredients-controller');
 
 const router = express.Router();
 
-// router.post('/:rid', ingredientsController.searchIngredients);
+// router.get('/:rid', ingredientsController.searchIngredients);
 
 router.post('/', ingredientsController.createIngredient);
 
