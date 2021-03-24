@@ -1,15 +1,34 @@
 const HttpError = require('../models/http-error');
+const { collection } = require('../models/ingredient');
 const Ingredient = require('../models/ingredient');
 
 
 // https://youtu.be/3IDlOI0D8-8?t=828
-// const searchIngredients = async (req, res, next) => {
-//     try {
-
-//     } catch {
-
-//     }
-// }
+const searchIngredients = async (req, res, next) => {
+    try {
+        let result = await Ingredient.aggregate([
+            {
+                "$search": {
+                    "autocomplete": {
+                        "query":`${req.query.term}`,
+                        "path": "name",
+                        "fuzzy": {
+                            "maxEdits": 2
+                        }
+                    }
+                }
+            }
+        ]);
+        res.send(result);
+    } catch (err) {
+        // const error = new HttpError(
+        //     'Could not find any ingredients. Please try again later.',
+        //     500
+        // );
+        // return next(error);
+        res.status(500).send({ message: err.message });
+    }
+}
 
 
 
@@ -52,3 +71,4 @@ const createIngredient = async (req, res, next) => {
 }
 
 exports.createIngredient = createIngredient;
+exports.searchIngredients = searchIngredients;
